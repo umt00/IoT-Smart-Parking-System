@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haliç Otopark | Akıllı Takip</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard {
+            background-color: #1e293b;
+            border-radius: 28px;
+            padding: 40px;
+            width: 100%;
+            max-width: 700px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 26px; font-weight: 800; letter-spacing: 1px; color: #f1f5f9; text-transform: uppercase; }
+        .header p { font-size: 13px; color: #94a3b8; font-weight: 500; margin-top: 8px; }
+        .datetime { font-size: 12px; color: #64748b; font-weight: 600; margin-top: 15px; letter-spacing: 1px; text-transform: uppercase; }
+
+        .main-status {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .progress-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__track {
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 14;
+            fill: transparent;
+        }
+
+        .progress-ring__circle {
+            stroke: #10b981;
+            stroke-width: 14;
+            fill: transparent;
+            stroke-dasharray: 502.6;
+            stroke-dashoffset: 502.6;
+            transition: stroke-dashoffset 1s ease-in-out, stroke 0.5s ease;
+            stroke-linecap: round;
+        }
+
+        .progress-text {
+            position: absolute;
+            font-size: 46px;
+            font-weight: 800;
+            color: #f1f5f9;
+        }
+
+        .occupancy-label {
+            font-size: 14px;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 20px;
+        }
+
+        .badge-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .badge {
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+        .busy-section {
+            background-color: #0f172a;
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .busy-title { font-size: 16px; font-weight: 600; color: #f1f5f9; margin-bottom: 20px; text-align: center; }
+
+        .chart-container { position: relative; height: 220px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="header">
+        <h1>Haliç University</h1>
+        <p>IoT Smart Parking Management</p>
+        <div class="datetime" id="datetimeDisplay"></div>
+    </div>
+
+    <div class="main-status">
+        <div class="progress-container">
+            <svg class="progress-ring" width="180" height="180">
+                <circle class="progress-ring__track" r="80" cx="90" cy="90"></circle>
+                <circle class="progress-ring__circle" id="progressCircle" r="80" cx="90" cy="90"></circle>
+            </svg>
+            <div class="progress-text" id="mainRate">%0</div>
+        </div>
+        <span class="occupancy-label">Anlık Doluluk Oranı</span>
+
+        <div class="badge-container">
+            <div class="badge" id="accBadge"><div class="dot"></div>ML Yükleniyor</div>
+            <div class="badge" id="statusBadge"><div class="dot"></div>Durum Yükleniyor</div>
+        </div>
+    </div>
+
+    <div class="busy-section">
+        <div class="busy-title">24 Saatlik Yapay Zeka Tahmin Analizi</div>
+        <div class="chart-container">
+            <canvas id="busyChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    let busyChart = null;
+    const circumference = 2 * Math.PI * 80;
+
+    function updateDateTime() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateStr = now.toLocaleDateString('tr-TR', options);
+        const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('datetimeDisplay').innerText = `${dateStr} - ${timeStr}`;
+    }
+
+    function getColorForRate(rate) {
+        if (rate >= 90) return { hex: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', text: 'Kritik' };
+        if (rate >= 70) return { hex: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', text: 'Yoğun' };
+        if (rate >= 50) return { hex: '#facc15', bg: 'rgba(250, 204, 21, 0.15)', text: 'Orta' };
+        return { hex: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', text: 'Müsait' };
+    }
+
+    function updateProgressRing(rate, colorObj) {
+        const circle = document.getElementById('progressCircle');
+        const offset = circumference - (Math.min(rate, 100) / 100) * circumference;
+        circle.style.strokeDashoffset = offset;
+        circle.style.stroke = colorObj.hex;
+
+        const rateEl = document.getElementById('mainRate');
+        rateEl.innerText = '%' + rate;
+    }
+
+    function updateBadges(rate, colorObj, isAccurate, r2Score) {
+        const statusBadge = document.getElementById('statusBadge');
+        statusBadge.style.backgroundColor = colorObj.bg;
+        statusBadge.style.color = colorObj.hex;
+        statusBadge.style.border = `1px solid ${colorObj.hex}40`;
+        statusBadge.innerHTML = `<div class="dot"></div>Durum: ${colorObj.text}`;
+
+        const accBadge = document.getElementById('accBadge');
+        if (isAccurate === false) {
+            accBadge.style.backgroundColor = 'rgba(148, 163, 184, 0.15)';
+            accBadge.style.color = '#94a3b8';
+            accBadge.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+            accBadge.innerHTML = `<div class="dot"></div>ML: Fallback Mode`;
+        } else {
+            let scoreText = r2Score ? `(%${Math.round(r2Score * 100)})` : '';
+            accBadge.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+            accBadge.style.color = '#3b82f6';
+            accBadge.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+            accBadge.innerHTML = `<div class="dot"></div>ML Aktif ${scoreText}`;
+        }
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('busyChart').getContext('2d');
+        const labels = Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+
+        busyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: [],
+                    backgroundColor: [],
+                    borderColor: [],
+                    borderWidth: [],
+                    borderRadius: 4,
+                    barPercentage: 0.85
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#1e293b',
+                        titleColor: '#94a3b8',
+                        bodyColor: '#f1f5f9',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                let val = context.raw;
+                                let desc = val === 0 ? 'Boş' : getColorForRate(val).text;
+                                return `Tahmin: %${val} (${desc})`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#64748b', font: { size: 10 }, stepSize: 25 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxTicksLimit: 12,
+                            color: function(context) {
+                                const currentHour = new Date().getHours();
+                                return context.tick.value === currentHour ? '#f8fafc' : '#64748b';
+                            },
+                            font: function(context) {
+                                const currentHour = new Date().getHours();
+                                return { size: 10, weight: context.tick.value === currentHour ? '800' : '500' };
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderChartData(predictions) {
+        if (!busyChart) initChart();
+
+        const currentHour = new Date().getHours();
+        const displayData = [];
+        const displayColors = [];
+        const displayBorders = [];
+        const displayBorderWidths = [];
+
+        for(let i = 0; i < 24; i++) {
+            const val = predictions[i] || 0;
+            displayData.push(val);
+
+            let colorHex = getColorForRate(val).hex;
+
+            if (i !== currentHour) {
+                colorHex += '99';
+            }
+
+            displayColors.push(colorHex);
+            displayBorders.push(i === currentHour ? '#ffffff' : 'transparent');
+            displayBorderWidths.push(i === currentHour ? 2 : 0);
+        }
+
+        busyChart.data.datasets[0].data = displayData;
+        busyChart.data.datasets[0].backgroundColor = displayColors;
+        busyChart.data.datasets[0].borderColor = displayBorders;
+        busyChart.data.datasets[0].borderWidth = displayBorderWidths;
+
+        busyChart.update('none');
+    }
+
+    async function updateUI() {
+        try {
+            const statusRes = await fetch('/api/parking/current');
+            if(statusRes.ok) {
+                const statusData = await statusRes.json();
+                const rate = statusData.occupancyPercentage || 0;
+                const colorObj = getColorForRate(rate);
+                updateProgressRing(rate, colorObj);
+
+                const predRes = await fetch('/api/parking/predictions');
+                if(predRes.ok) {
+                    const predData = await predRes.json();
+                    updateBadges(rate, colorObj, predData.accurate, predData.r2Score);
+                    if(predData.hourlyPredictions) {
+                        renderChartData(predData.hourlyPredictions);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    updateUI();
+    setInterval(updateUI, 5000);
+</script>
+</body>
+</html>
