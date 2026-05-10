@@ -1,0 +1,48 @@
+services:
+  halic-db:
+    image: postgres:15
+    container_name: halic_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: umt123123..
+      POSTGRES_DB: HalicParking_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  halic-ml:
+    build:
+      context: ./Python/ParkingAdvancedPython
+    container_name: halic_python
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - halic-db
+    environment:
+      - DATABASE_URL=postgresql://postgres:umt123123..@host.docker.internal:5432/HalicParking_db
+    volumes:
+      - ./Python/ParkingAdvancedPython/models_storage:/app/models_storage
+
+  halic-backend:
+    build:
+      context: ./Java/ParkingAdvancedJava
+    container_name: halic_java
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - halic-db
+      - halic-ml
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/HalicParking_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=umt123123..
+      - PYTHON_API_PREDICT_URL=http://halic-ml:5000/api/v1/parking/predict
+      - PYTHON_API_RETRAIN_URL=http://halic-ml:5000/api/v1/model/retrain
+      - APP_API_KEY=Umt123123..
+
+volumes:
+  postgres_data:
