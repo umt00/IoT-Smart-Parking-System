@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Shedai" />
+    <title>Haliç Park</title>
+
+    <link rel="icon" type="image/png" href="halic-logo-tr.png">
+    <link rel="apple-touch-icon" href="halic-logo-tr.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --halic-blue: #00209F;
+            --halic-blue-light: #1a3cb8;
+
+            --bg-main: #0b1120;
+            --bg-card: #1e293b;
+            --bg-card-hover: #27354c;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+
+            --success: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --overflow: #9f1239;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background:
+                    radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 25%),
+                    radial-gradient(circle at bottom right, rgba(0,32,159,0.18), transparent 25%),
+                    #0b1120;
+
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            overflow: hidden;
+
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* =========================
+           HEADER & HEADER ALERT
+        ========================== */
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            min-height: 90px;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(59,130,246,0.45));
+        }
+
+        .brand-text h1 {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        .brand-text h1 span {
+            color: var(--halic-blue-light);
+        }
+
+        .brand-text p {
+            margin: 2px 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .header-alert-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .toast-item {
+            background: rgba(60, 7, 24, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(244, 63, 94, 0.55);
+            color: #fff;
+            padding: 12px 22px;
+            border-radius: 14px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            box-shadow:
+                    0 12px 30px rgba(225, 29, 72, 0.25),
+                    inset 0 0 15px rgba(255,255,255,0.03);
+
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.95);
+            transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .toast-item.show {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+
+        .toast-icon {
+            font-size: 1.15rem;
+        }
+
+        .toast-text {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .toast-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+
+        .toast-sub {
+            font-size: 0.78rem;
+            color: #fecdd3;
+            font-weight: 500;
+        }
+
+        .header-info-group {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .live-datetime {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            font-weight: 600;
+            background: rgba(51, 65, 85, 0.4);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .badge-trust {
+            background: rgba(0, 32, 159, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(0, 32, 159, 0.4);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        /* =========================
+           DASHBOARD
+        ========================== */
+
+        .dashboard-wrapper {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 24px;
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .lots-sidebar {
+            display: grid;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 16px;
+            height: 100%;
+        }
+
+        .lot-card {
+            background: linear-gradient(
+                    145deg,
+                    rgba(30,41,59,0.95),
+                    rgba(15,23,42,0.95)
+            );
+            border: 1px solid rgba(71,85,105,0.4);
+            border-radius: 22px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .lot-card.active {
+            border: 1px solid #3b82f6;
+            background: linear-gradient(
+                    145deg,
+                    rgba(0,32,159,0.22),
+                    rgba(15,23,42,0.98)
+            );
+            box-shadow:
+                    0 0 25px rgba(59,130,246,0.18),
+                    inset 0 0 20px rgba(59,130,246,0.08);
+            transform: translateY(-2px);
+        }
+
+        .optimal-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(5, 150, 105, 0.15);
+            color: #10b981;
+            border: 1px solid #10b981;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        .mini-gauge-container {
+            width: 75px;
+            height: 75px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .mini-gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        .lot-info {
+            flex: 1;
+        }
+
+        .lot-info h4 {
+            margin: 0 0 8px 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .lot-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .sidebar-empty-count {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-left: 5px;
+        }
+
+        .type-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(51, 65, 85, 0.8);
+            color: #e2e8f0;
+            margin-left: 8px;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+
+        /* =========================
+           DETAIL PANEL
+        ========================== */
+
+        .detail-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            min-height: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(
+                    145deg,
+                    rgba(30,41,59,0.96),
+                    rgba(15,23,42,0.96)
+            );
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stat-value {
+            font-size: 2.6rem;
+            font-weight: 800;
+            display: block;
+            line-height: 1.2;
+            transition: color 0.3s ease;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* =========================
+           CHART CARD
+        ========================== */
+
+        .chart-card {
+            background: linear-gradient(
+                    145deg,
+                    rgba(30,41,59,0.96),
+                    rgba(15,23,42,0.96)
+            );
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            position: relative;
+        }
+
+        .chart-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-card h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .main-chart-wrapper {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .chart-error-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 41, 59, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            z-index: 10;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .chart-error-overlay span {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+    <div class="brand-container">
+        <img src="halic-logo-tr.png" alt="Haliç Üniversitesi Logo" class="brand-logo">
+        <div class="brand-text">
+            <h1>HALİÇ <span>Park</span></h1>
+            <p>Gerçek Zamanlı Doluluk Analizi</p>
+        </div>
+    </div>
+
+    <div class="header-alert-wrapper">
+        <div id="overflowToast" class="toast-item">
+            <div class="toast-icon">⚠️</div>
+            <div class="toast-text">
+                <div class="toast-title">Otopark Kapasitesi Aşıldı</div>
+                <div class="toast-sub">Yeni araç girişleri kritik seviyeye ulaştı</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-info-group">
+        <div class="live-datetime" id="liveDateTime">
+             Yükleniyor...
+        </div>
+
+        <div class="badge-trust" id="trustBadge">
+            <div class="status-dot"></div>
+            Sistem Aktif | Güven İndeksi R²: Yükleniyor...
+        </div>
+    </div>
+</header>
+
+<div class="dashboard-wrapper">
+    <div class="lots-sidebar" id="lotsContainer"></div>
+
+    <div class="detail-panel">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value" id="statCap">--</span>
+                <span class="stat-label">Toplam Kapasite</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="statCount">--</span>
+                <span class="stat-label">İçerideki Araç</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="statFree" style="color: var(--success);">--</span>
+                <span class="stat-label" id="statFreeLabel">Müsait Yer</span>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h3 id="predictionTitle">
+                    24 Saatlik Doluluk Tahmini
+                </h3>
+                <span class="type-badge" style="background: rgba(0, 32, 159, 0.1); color: #60a5fa; border: 1px solid rgba(0, 32, 159, 0.5);">
+                    Yapay Zeka Destekli
+                </span>
+            </div>
+
+            <div class="main-chart-wrapper">
+                <canvas id="predictionChart"></canvas>
+                <div class="chart-error-overlay" id="predictionOverlay">
+                    <span>📡</span>
+                    Tahmin verisine ulaşılamıyor.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ==========================================
+       SPRING BACKEND API & CONFIG
+    ========================================== */
+    const API_BASE = "http://localhost:8080/api/parking";
+    let activeLotId = 1;
+    let predictionChartInstance = null;
+    const miniCharts = {};
+    let lastDataState = {};
+
+    const myLots = [
+        { id: 1, name: "H0 Merkez", type: "Kapalı Alan", capacity: 200 },
+        { id: 2, name: "H1 Kuzey", type: "Açık Alan", capacity: 250 },
+        { id: 3, name: "H2 Güney", type: "Kapalı Alan", capacity: 180 },
+        { id: 4, name: "H3 Doğu", type: "Açık Alan", capacity: 150 }
+    ];
+
+    function getColorForRate(rate) {
+        if (rate > 1.0) {
+            return getComputedStyle(document.documentElement).getPropertyValue('--overflow').trim();
+        }
+        if (rate >= 0.85) {
+            return getComputedStyle(document.documentElement).getPropertyValue('--danger').trim();
+        }
+        if (rate >= 0.50) {
+            return getComputedStyle(document.documentElement).getPropertyValue('--warning').trim();
+        }
+        return getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
+    }
+
+    function updateDateTime() {
+        const now = new Date();
+        const options = {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        };
+        document.getElementById('liveDateTime').innerHTML = `${now.toLocaleDateString('tr-TR', options)}`;
+    }
+
+    function init() {
+        buildSidebar();
+        initPredictionChart();
+        updateDateTime();
+
+        fetchOptimalRoute();
+        fetchModelMetrics();
+        fetchAllCurrentData();
+        loadPredictions(activeLotId);
+
+        setInterval(updateDateTime, 10000);
+        setInterval(() => {
+            fetchOptimalRoute();
+            fetchAllCurrentData();
+        }, 5000);
+
+        setInterval(fetchModelMetrics, 3600000);
+    }
+
+/* ==========================================
+       STATIC SYSTEM STATUS (Güven İndeksi Kaldırıldı)
+    ========================================== */
+    function fetchModelMetrics() {
+        const badgeEl = document.getElementById('trustBadge');
+        if (badgeEl) {
+            badgeEl.innerHTML = `
+                <div class="status-dot" style="color: var(--success);"></div>
+                Sistem Aktif
+            `;
+        }
+    }
+
+    function buildSidebar() {
+        const container = document.getElementById('lotsContainer');
+        myLots.forEach(lot => {
+            const card = document.createElement('div');
+            card.className = `lot-card ${lot.id === activeLotId ? 'active' : ''}`;
+            card.id = `lot-card-${lot.id}`;
+            card.onclick = () => switchPark(lot.id);
+
+            card.innerHTML = `
+                <div class="mini-gauge-container">
+                    <canvas id="mini-chart-${lot.id}"></canvas>
+                    <div class="mini-gauge-text" id="mini-text-${lot.id}">%0</div>
+                </div>
+                <div class="lot-info">
+                    <h4>${lot.name} <span class="type-badge">${lot.type}</span></h4>
+                    <p>Kapasite: ${lot.capacity} <span class="sidebar-empty-count" id="sidebar-empty-${lot.id}"></span></p>
+                </div>
+            `;
+            container.appendChild(card);
+
+            const ctx = document.getElementById(`mini-chart-${lot.id}`).getContext('2d');
+            miniCharts[lot.id] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: ['#059669', '#334155'],
+                        borderWidth: 0,
+                        borderRadius: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '78%',
+                    plugins: { tooltip: { enabled: false } },
+                    animation: { animateScale: true }
+                }
+            });
+        });
+    }
+
+    function initPredictionChart() {
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        predictionChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`),
+                datasets: [{
+                    label: 'Tahmini Doluluk',
+                    data: [],
+                    backgroundColor: function(context) {
+                        const value = context.raw;
+                        if (value == null) return '#334155';
+                        return getColorForRate(value);
+                    },
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        callbacks: { label: (ctx) => `Doluluk: %${(ctx.raw * 100).toFixed(0)}` }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1.0,
+                        grid: { color: 'rgba(51, 65, 85, 0.2)' },
+                        ticks: { stepSize: 0.5, color: '#94a3b8', callback: (val) => `%${val * 100}`, font: { family: 'Inter' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#94a3b8', maxRotation: 0, font: { family: 'Inter' },
+                            callback: function(val, i) { return i % 2 === 0 ? this.getLabelForValue(val) : ''; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function switchPark(id) {
+        if(activeLotId === id) return;
+        document.querySelectorAll('.lot-card').forEach(c => c.classList.remove('active'));
+        document.getElementById(`lot-card-${id}`).classList.add('active');
+        activeLotId = id;
+        fetchSingleCurrentData(id, true, true);
+        loadPredictions(id);
+    }
+
+    /* ==========================================
+       CURRENT OCCUPANCY
+       SQL -> SPRING DTO
+    ========================================== */
+    async function fetchOptimalRoute() {
+        try {
+            const res = await fetch(`${API_BASE}/recommended`);
+            if (!res.ok) return;
+            const data = await res.json();
+            document.querySelectorAll('.lot-card').forEach(card => {
+                const badge = card.querySelector('.optimal-badge');
+                if (badge) badge.remove();
+            });
+            if (data.remaining > 0) {
+                const optimalCard = document.getElementById(`lot-card-${data.id}`);
+                if (optimalCard) {
+                    const badge = document.createElement('div');
+                    badge.className = 'optimal-badge';
+                    badge.innerHTML = 'En Boş';
+                    optimalCard.appendChild(badge);
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function fetchAllCurrentData() {
+        for (const lot of myLots) {
+            await fetchSingleCurrentData(lot.id, false, false);
+        }
+    }
+
+    async function fetchSingleCurrentData(lotId, updateRightPanel = true, forceUpdate = false) {
+        try {
+            const res = await fetch(`${API_BASE}/current/${lotId}`);
+            if (!res.ok) return;
+
+            const data = await res.json();
+            const currentString = JSON.stringify(data);
+
+            if (!forceUpdate && lastDataState[lotId] === currentString) return;
+            lastDataState[lotId] = currentString;
+
+            // Kural: Double Precision (0.0 - 1.0 formatı)
+            const rate = data.occupancyPercentage / 100.0;
+            // DTO'dan sadece net araç sayısını çekiyoruz
+            const exactCurrentCars = data.currentCount;
+
+            // Kapasite DTO'da olmadığı için fonksiyona sadece net araç sayısını yolluyoruz
+            updateSidebarMiniChart(lotId, rate, exactCurrentCars);
+
+            if (lotId === activeLotId || updateRightPanel) {
+                updateDetailPanelStats(lotId, rate, data.parkName, exactCurrentCars);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function updateSidebarMiniChart(lotId, rate, currentCars) {
+        // Kapasiteyi Frontend'deki sabit dizimizden çekiyoruz
+        const lot = myLots.find(l => l.id === lotId);
+        const capacity = lot.capacity;
+
+        const chart = miniCharts[lotId];
+        const color = getColorForRate(rate);
+        const filled = Math.min(rate, 1.0);
+        const empty = Math.max(0, 1.0 - rate);
+
+        chart.data.datasets[0].data = [filled, empty];
+        chart.data.datasets[0].backgroundColor = [color, 'rgba(51, 65, 85, 0.4)'];
+        chart.update();
+
+        const percentage = Math.round(rate * 100);
+        const textEl = document.getElementById(`mini-text-${lotId}`);
+        textEl.innerText = `%${percentage}`;
+        textEl.style.color = color;
+
+        // Hesaplamayı DTO'dan gelen net sayı ve Frontend'deki kapasite ile yapıyoruz
+        const freeSpace = Math.max(0, capacity - currentCars);
+        const sidebarEmptyEl = document.getElementById(`sidebar-empty-${lotId}`);
+        sidebarEmptyEl.innerHTML = `| <strong style="color:${color}">${freeSpace} Boş Yer</strong>`;
+    }
+
+    function updateDetailPanelStats(lotId, rate, parkName, currentCars) {
+        // Kapasiteyi Frontend'deki sabit dizimizden çekiyoruz
+        const lot = myLots.find(l => l.id === lotId);
+        const capacity = lot.capacity;
+
+        const isOverflow = rate > 1.0;
+        const color = getColorForRate(rate);
+
+        document.getElementById('statCap').innerText = capacity;
+
+        const countEl = document.getElementById('statCount');
+        countEl.innerText = currentCars; // DB'den gelen net araç sayısı
+        countEl.style.color = color;
+
+        const freeEl = document.getElementById('statFree');
+        const freeLabel = document.getElementById('statFreeLabel');
+        const overflowToast = document.getElementById('overflowToast');
+
+        if (isOverflow) {
+            freeEl.innerText = `+${currentCars - capacity}`;
+            freeEl.style.color = 'var(--overflow)';
+            freeLabel.innerText = 'Kapasite Aşıldı';
+            overflowToast.classList.add('show');
+        } else {
+            freeEl.innerText = capacity - currentCars;
+            freeEl.style.color = 'var(--success)';
+            freeLabel.innerText = 'Müsait Yer';
+            overflowToast.classList.remove('show');
+        }
+    }
+
+    /* ==========================================
+       PREDICTION
+       PYTHON -> SPRING -> FRONTEND
+    ========================================== */
+    async function loadPredictions(lotId) {
+        const overlay = document.getElementById('predictionOverlay');
+        const chartCanvas = document.getElementById('predictionChart');
+
+        try {
+            const res = await fetch(`${API_BASE}/predictions/${lotId}`);
+            if (!res.ok) throw new Error("Tahmin verisi alınamadı");
+
+            const data = await res.json();
+            if (!data.hourlyRates || data.hourlyRates.length === 0) throw new Error("Tahmin verisi boş");
+
+            overlay.style.display = 'none';
+            chartCanvas.style.opacity = '1';
+
+            const doubleRates = data.hourlyRates.map(rate => rate / 100.0);
+
+            predictionChartInstance.data.datasets[0].data = doubleRates;
+            predictionChartInstance.update();
+
+        } catch(e) {
+            console.error(e);
+            overlay.style.display = 'flex';
+            chartCanvas.style.opacity = '0.1';
+        }
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>

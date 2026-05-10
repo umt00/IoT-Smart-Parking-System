@@ -1,0 +1,24 @@
+# --- Java / Maven ---
+Java/**/target/
+Java/**/*.class
+Java/**/.mvn/
+Java/**/mvnw
+Java/**/mvnw.cmd
+Java/**/.idea/
+Java/**/*.iml
+
+# --- Python / ML ---
+Python/**/__pycache__/
+Python/**/*.pyc
+Python/**/venv/
+Python/**/.env
+Python/**/models_storage/*.pkl
+Python/**/.vscode/
+Python/**/metadata.json
+
+# --- OS / IDE ---
+.DS_Store
+.idea/
+.vscode/
+*.log
+docker-compose.override.yml
